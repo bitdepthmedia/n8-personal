@@ -15,6 +15,7 @@ node_modules/
 # Build output
 .next/
 out/
+build/
 
 # Static files generated at build
 *.cache
@@ -55,9 +56,9 @@ Thumbs.db
 *.sublime-workspace
 *.sublime-project
 
-# Other files
-*.bak
-*.lock
-
-# vercel
+# Vercel
 .vercel
+
+# Additional generated files
+coverage/
+.nyc_output/
