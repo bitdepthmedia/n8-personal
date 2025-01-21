@@ -40,7 +40,7 @@ export async function createTransporter() {
             refreshToken: process.env.EMAIL_REFRESH_TOKEN,
             accessToken: accessToken
         }
-    })
+    } as nodemailer.TransportOptions)
 }
 
 // Function to refresh access token
