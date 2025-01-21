@@ -9,9 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true, // Ensures images don't use Next.js optimization
   },
-  experimental: {
-    appDir: true, // Keep valid experimental options only
-  },
 };
 
 let userConfig = {};

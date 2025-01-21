@@ -34,9 +34,11 @@ export default function Header() {
         <Image
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/placeholder.jpg-i6t521hlkxj95oSXQ5KgXRb9NJ30EY.jpeg"
           alt="Nate Talbot"
-          layout="fill"
-          objectFit="cover"
-          objectPosition="center 20%"
+          fill
+          style={{
+            objectFit: "cover",
+            objectPosition: "center 20%"
+          }}
           quality={100}
           priority
         />
