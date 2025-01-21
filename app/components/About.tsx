@@ -2,10 +2,10 @@ export default function About() {
   return (
     <section id="about" className="py-16 px-4 md:px-8 bg-secondary-bg">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">About Me</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Behind Every Business, There's Me</h2>
         <div className="space-y-6">
           <p className="animate-fade-in">
-            Behind every business, there's me—the person who makes sure your team, systems, and strategy work {" "}
+            —the person who makes sure your team, systems, and strategy work {" "}
             <span className="text-accent-blue">together</span> to keep your vision on track. For over two decades, I've been helping businesses and organizations turn ideas into sustainable
             realities.
           </p>

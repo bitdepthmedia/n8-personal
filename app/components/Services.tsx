@@ -27,7 +27,7 @@ export default function Services() {
   return (
     <section className="py-16 px-4 md:px-8">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Services</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">How The Strategy Aligns</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {services.map((service, index) => (
             <Link
