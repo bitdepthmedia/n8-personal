@@ -100,7 +100,7 @@ export default function Contact() {
         honeypot: "",
         recaptchaToken: ""
       })
-      alert("Thank you for your message. We will get back to you soon!")
+      alert("Thank you for your message. I'll get back to you soon!")
     } catch (error) {
       setSubmissionError("Failed to submit form. Please try again.")
     } finally {
