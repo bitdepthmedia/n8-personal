@@ -76,7 +76,7 @@ export default function Contact() {
             type="submit"
             className="w-full bg-accent-blue text-primary-text py-3 px-6 rounded-md font-semibold hover:bg-accent-gold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-gold"
           >
-            Let's Work Together
+            Let's Talk
           </button>
         </form>
       </div>
