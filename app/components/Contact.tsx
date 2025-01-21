@@ -1,29 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import ReCAPTCHA, { ReCAPTCHA as ReCAPTCHAInstance } from "react-google-recaptcha"
 
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     message: "",
-    captchaAnswer: "",
     csrfToken: "",
-    honeypot: ""
+    honeypot: "",
+    recaptchaToken: ""
   })
-  const [captchaQuestion, setCaptchaQuestion] = useState("")
-  const [formLoadTime, setFormLoadTime] = useState(Date.now())
   const [submissionError, setSubmissionError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const recaptchaRef = useRef<ReCAPTCHAInstance>(null)
 
   useEffect(() => {
-    // Fetch CSRF token and CAPTCHA question when component mounts
+    // Fetch CSRF token when component mounts
     const fetchSecurityData = async () => {
       try {
         const response = await fetch('/api/contact-security')
         const data = await response.json()
         setFormData(prev => ({ ...prev, csrfToken: data.csrfToken }))
-        setCaptchaQuestion(data.captchaQuestion)
       } catch (error) {
         console.error("Error fetching security data:", error)
       }
@@ -36,6 +35,10 @@ export default function Contact() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+  }
+
+  const handleRecaptchaChange = (token: string | null) => {
+    setFormData(prev => ({ ...prev, recaptchaToken: token || "" }))
   }
 
   const validateForm = () => {
@@ -55,9 +58,9 @@ export default function Contact() {
       return "Invalid submission"
     }
 
-    // CAPTCHA validation
-    if (!formData.captchaAnswer) {
-      return "Please complete the CAPTCHA"
+    // reCAPTCHA validation
+    if (!formData.recaptchaToken) {
+      return "Please complete the reCAPTCHA"
     }
 
     return null
@@ -67,14 +70,6 @@ export default function Contact() {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmissionError("")
-
-    // Time-based validation
-    const submissionTime = Date.now()
-    if (submissionTime - formLoadTime < 1000) {
-      setSubmissionError("Form submitted too quickly")
-      setIsSubmitting(false)
-      return
-    }
 
     const validationError = validateForm()
     if (validationError) {
@@ -101,15 +96,18 @@ export default function Contact() {
         name: "",
         email: "",
         message: "",
-        captchaAnswer: "",
         csrfToken: "",
-        honeypot: ""
+        honeypot: "",
+        recaptchaToken: ""
       })
       alert("Thank you for your message. We will get back to you soon!")
     } catch (error) {
       setSubmissionError("Failed to submit form. Please try again.")
     } finally {
       setIsSubmitting(false)
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset()
+      }
     }
   }
 
@@ -186,21 +184,12 @@ export default function Contact() {
             ></textarea>
           </div>
 
-          {/* CAPTCHA Field */}
-          <div>
-            <label htmlFor="captchaAnswer" className="block mb-2 text-sm font-medium">
-              {captchaQuestion}
-            </label>
-            <input
-              type="text"
-              id="captchaAnswer"
-              name="captchaAnswer"
-              value={formData.captchaAnswer}
-              onChange={handleChange}
-              required
-              className="w-full p-3 bg-primary-bg text-primary-text rounded-md focus:outline-none focus:ring-2 focus:ring-accent-blue"
-            />
-          </div>
+          {/* reCAPTCHA */}
+          <ReCAPTCHA
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
+            onChange={handleRecaptchaChange}
+            ref={recaptchaRef}
+          />
 
           <button
             type="submit"

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { validateCsrfToken } from '../../lib/security'
-import { validateCaptcha } from '../../lib/captcha'
 import type { NextRequest } from 'next/server'
 import { createTransporter } from '../../lib/oauth'
 
@@ -11,6 +10,23 @@ interface SubmissionData {
 
 // In-memory store for rate limiting and spam detection
 const submissionCounts = new Map<string, SubmissionData>()
+
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
+      {
+        method: 'POST'
+      }
+    )
+    
+    const data = await response.json()
+    return data.success && data.score >= 0.5
+  } catch (error) {
+    console.error('reCAPTCHA verification error:', error)
+    return false
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,10 +61,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate CAPTCHA
-    if (!validateCaptcha(formData.captchaId, formData.captchaAnswer)) {
+    // Validate reCAPTCHA token
+    if (!formData.recaptchaToken) {
       return NextResponse.json(
-        { error: 'Invalid CAPTCHA response' },
+        { error: 'reCAPTCHA token missing' },
+        { status: 400 }
+      )
+    }
+
+    const isRecaptchaValid = await verifyRecaptcha(formData.recaptchaToken)
+    if (!isRecaptchaValid) {
+      return NextResponse.json(
+        { error: 'reCAPTCHA verification failed' },
         { status: 400 }
       )
     }
