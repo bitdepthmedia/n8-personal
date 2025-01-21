@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { validateCsrfToken } from '../../lib/security'
 import { validateCaptcha } from '../../lib/captcha'
-import nodemailer from 'nodemailer'
 import type { NextRequest } from 'next/server'
+import { createTransporter } from '../../lib/oauth'
 
 interface SubmissionData {
   count: number
@@ -11,15 +11,6 @@ interface SubmissionData {
 
 // In-memory store for rate limiting and spam detection
 const submissionCounts = new Map<string, SubmissionData>()
-
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-})
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,12 +78,21 @@ export async function POST(request: NextRequest) {
       text: `Name: ${formData.name}\nEmail: ${formData.email}\nMessage: ${formData.message}`
     }
 
-    await transporter.sendMail(mailOptions)
-
-    return NextResponse.json(
-      { message: 'Message sent successfully' },
-      { status: 200 }
-    )
+    try {
+      const transporter = await createTransporter()
+      await transporter.sendMail(mailOptions)
+      
+      return NextResponse.json(
+        { message: 'Message sent successfully' },
+        { status: 200 }
+      )
+    } catch (error) {
+      console.error('Error sending email:', error)
+      return NextResponse.json(
+        { error: 'Failed to send email. Please try again later.' },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Error processing contact form:', error)
     return NextResponse.json(
