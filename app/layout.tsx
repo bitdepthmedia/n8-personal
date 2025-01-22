@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Nate Talbot - The Business Behind Your Business",
   description:
     "Nate Talbot is a business consultant specializing in AI integrations, blockchain, and strategic growth.",
+  icons: {
+    icon: "/nt_logo_fav.jpg",
+  },
 }
 
 export default function RootLayout({
