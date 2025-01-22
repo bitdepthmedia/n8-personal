@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       if (now - lastSubmission < 60000) {
         if (count > 5) {
           return NextResponse.json(
-            { error: 'Too many submissions. Please try again later.' },
+            { error: 'Too many attempts. Please wait a minute before trying again.' },
             { status: 429 }
           );
         }
@@ -48,8 +48,14 @@ export async function POST(request: NextRequest) {
     // Validate form data
     const { name, email, message, recaptchaToken } = formData;
     if (!name || !email || !message || !recaptchaToken) {
+      const missingFields = [];
+      if (!name) missingFields.push('name');
+      if (!email) missingFields.push('email');
+      if (!message) missingFields.push('message');
+      if (!recaptchaToken) missingFields.push('reCAPTCHA verification');
+      
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: `Please provide all required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       );
     }
@@ -58,16 +64,35 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Invalid email address' },
+        { error: 'Please provide a valid email address' },
         { status: 400 }
       );
     }
 
     // Verify reCAPTCHA token
-    const isValidToken = await verifyRecaptchaToken(recaptchaToken);
-    if (!isValidToken) {
+    try {
+      const verificationResult = await verifyRecaptchaToken(recaptchaToken);
+      if (!verificationResult.success) {
+        return NextResponse.json(
+          { 
+            error: verificationResult.error || 'reCAPTCHA verification failed. Please try again.',
+            details: verificationResult.details
+          },
+          { status: 400 }
+        );
+      }
+
+      // If score is provided and too low, reject the submission
+      if (verificationResult.details?.score && verificationResult.details.score < 0.3) {
+        return NextResponse.json(
+          { error: 'Security check failed. Please ensure you\'re not using automated tools.' },
+          { status: 403 }
+        );
+      }
+    } catch (error) {
+      console.error('reCAPTCHA verification error:', error);
       return NextResponse.json(
-        { error: 'Invalid reCAPTCHA response' },
+        { error: 'Failed to verify reCAPTCHA. Please refresh the page and try again.' },
         { status: 400 }
       );
     }
@@ -80,7 +105,15 @@ export async function POST(request: NextRequest) {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Email sending error:', error);
+      return NextResponse.json(
+        { error: 'Failed to send email. Please try again later.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       { message: 'Message sent successfully' },
@@ -89,7 +122,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error processing contact form:', error);
     return NextResponse.json(
-      { error: 'An error occurred while processing your request' },
+      { error: 'An unexpected error occurred. Please try again later.' },
       { status: 500 }
     );
   }

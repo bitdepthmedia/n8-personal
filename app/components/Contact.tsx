@@ -21,36 +21,70 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [scriptError, setScriptError] = useState("");
 
   useEffect(() => {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!siteKey) {
+      setScriptError("reCAPTCHA configuration is missing");
+      return;
+    }
+
+    // Remove any existing reCAPTCHA scripts to prevent duplicates
+    const existingScript = document.querySelector('script[src*="recaptcha"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
     // Load reCAPTCHA script
     const script = document.createElement("script");
-    script.src = `https://www.google.com/recaptcha/api.js?render=6Ld3ML8qAAAAAClzPiX0wr7Jx5lSdp0QR36VREwI`;
+    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
     script.async = true;
     script.defer = true;
     
     script.onload = () => {
-      window.grecaptcha.ready(() => {
+      // Initialize reCAPTCHA after script loads
+      window.grecaptcha?.ready(() => {
         setRecaptchaLoaded(true);
+        setScriptError("");
       });
+    };
+
+    script.onerror = () => {
+      setScriptError("Failed to load reCAPTCHA. Please refresh the page or check your internet connection.");
+      setRecaptchaLoaded(false);
     };
 
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      // Cleanup
+      const script = document.querySelector('script[src*="recaptcha"]');
+      if (script) {
+        document.head.removeChild(script);
+      }
+      setRecaptchaLoaded(false);
     };
   }, []);
 
   const getRecaptchaToken = async () => {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!siteKey) {
+      throw new Error("reCAPTCHA site key is missing");
+    }
+
+    if (!window.grecaptcha) {
+      throw new Error("reCAPTCHA has not been loaded properly");
+    }
+
     try {
-      const token = await window.grecaptcha.execute("6Ld3ML8qAAAAAClzPiX0wr7Jx5lSdp0QR36VREwI", {
+      const token = await window.grecaptcha.execute(siteKey, {
         action: "contact_form",
       });
       return token;
     } catch (error) {
       console.error("reCAPTCHA error:", error);
-      throw error;
+      throw new Error("Failed to verify reCAPTCHA. Please refresh the page and try again.");
     }
   };
 
@@ -66,8 +100,12 @@ export default function Contact() {
     setSubmissionError("");
 
     try {
+      if (!recaptchaLoaded) {
+        throw new Error("Please wait for the security check to load");
+      }
+
       const recaptchaToken = await getRecaptchaToken();
-      
+      // In handleSubmit, right after getRecaptchaToken():
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
@@ -79,9 +117,20 @@ export default function Contact() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to submit the form.");
+        // Handle specific error cases
+        if (response.status === 429) {
+          throw new Error("Too many attempts. Please wait a moment before trying again.");
+        }
+        if (response.status === 400 && data.error.includes("reCAPTCHA")) {
+          throw new Error("Security verification failed. Please try again or disable any ad blockers.");
+        }
+        if (response.status === 403) {
+          throw new Error("Security check failed. Please ensure you're not using automated tools.");
+        }
+        throw new Error(data.error || "Failed to submit the form.");
       }
 
       alert("Thank you for your message. I'll get back to you soon!");
@@ -92,11 +141,21 @@ export default function Contact() {
         recaptchaToken: "",
       });
     } catch (error) {
-      setSubmissionError(
-        error instanceof Error
-          ? error.message
-          : "Failed to submit the form. Please try again."
-      );
+      let errorMessage = "Failed to submit the form. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("reCAPTCHA") ||
+            error.message.includes("Security") ||
+            error.message.includes("Too many attempts") ||
+            error.message.includes("Invalid email") ||
+            error.message.includes("All fields are required")) {
+          errorMessage = error.message;
+        } else if (error.message.includes("fetch")) {
+          errorMessage = "Network error. Please check your internet connection.";
+        }
+      }
+      
+      setSubmissionError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -153,13 +212,15 @@ export default function Contact() {
               />
             </div>
 
-            {submissionError && (
-              <div className="text-red-600 text-sm">{submissionError}</div>
+            {(submissionError || scriptError) && (
+              <div className="text-red-600 text-sm bg-red-100 p-3 rounded-md border border-red-200">
+                {submissionError || scriptError}
+              </div>
             )}
 
             <button
               type="submit"
-              disabled={isSubmitting || !recaptchaLoaded}
+              disabled={isSubmitting || !recaptchaLoaded || !!scriptError}
               className="w-full p-3 text-white bg-accent-blue rounded-md font-semibold hover:bg-accent-gold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-gold disabled:opacity-50"
             >
               {isSubmitting ? "Submitting..." : "Submit"}
