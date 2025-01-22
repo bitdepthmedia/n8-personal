@@ -9,7 +9,7 @@ export default function Footer() {
         </p>
         <div className="flex space-x-6">
           <Link
-            href="https://linkedin.com/in/yourprofile"
+            href="https://www.linkedin.com/in/natetalbot/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-secondary-text hover:text-accent-blue transition-colors duration-300"
@@ -17,12 +17,18 @@ export default function Footer() {
             LinkedIn
           </Link>
           <Link
-            href="https://twitter.com/yourhandle"
+            href="https://x.com/natet313"
             target="_blank"
             rel="noopener noreferrer"
             className="text-secondary-text hover:text-accent-blue transition-colors duration-300"
           >
-            Twitter
+            Twitter/X
+          </Link>
+          <Link
+            href="/tos"
+            className="text-secondary-text hover:text-accent-blue transition-colors duration-300"
+          >
+            TOS
           </Link>
         </div>
       </div>

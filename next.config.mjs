@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true, // Ensures images don't use Next.js optimization
   },
+  transpilePackages: ['@/*'],
 };
 
 let userConfig = {};
