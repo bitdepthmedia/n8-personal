@@ -70,7 +70,7 @@ export default function Header() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-white opacity-60"
+            className="text-yellow-400"
           >
             <path d="M12 5v14M19 12l-7 7-7-7" />
           </svg>
@@ -79,4 +79,3 @@ export default function Header() {
     </header>
   )
 }
-
