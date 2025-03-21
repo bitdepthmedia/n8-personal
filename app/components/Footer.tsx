@@ -25,6 +25,12 @@ export default function Footer() {
             Twitter/X
           </Link>
           <Link
+            href="/pricing"
+            className="text-secondary-text hover:text-accent-blue transition-colors duration-300"
+          >
+            Pricing
+          </Link>
+          <Link
             href="/tos"
             className="text-secondary-text hover:text-accent-blue transition-colors duration-300"
           >
@@ -35,4 +41,3 @@ export default function Footer() {
     </footer>
   )
 }
-

@@ -11,9 +11,30 @@ interface SubmissionData {
 // In-memory store for rate limiting
 const submissionCounts = new Map<string, SubmissionData>();
 
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
+// Log email configuration for debugging
+console.log('Email config:', {
   service: process.env.EMAIL_SERVICE,
+  user: process.env.EMAIL_USER,
+  fromAddress: process.env.EMAIL_FROM,
+  toAddress: process.env.EMAIL_TO,
+  passwordSet: !!process.env.EMAIL_PASSWORD
+});
+
+// Email transporter configuration
+// Log more detailed environment variable information
+console.log('Detailed environment variables:', {
+  EMAIL_SERVICE: process.env.EMAIL_SERVICE,
+  EMAIL_USER: process.env.EMAIL_USER ? 'Set (not showing for security)' : 'Not set',
+  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'Set (not showing for security)' : 'Not set',
+  EMAIL_FROM: process.env.EMAIL_FROM,
+  EMAIL_TO: process.env.EMAIL_TO
+});
+
+// Use explicit SMTP configuration instead of service
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -105,10 +126,61 @@ export async function POST(request: NextRequest) {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     };
 
+    // Log mail options for debugging
+    console.log('Mail options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject
+    });
+
     try {
+      console.log('Attempting to send email with transporter...');
       await transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error('Email sending error:', error);
+      console.log('Email sent successfully!');
+    } catch (error: any) {
+      // Detailed error logging
+      console.error('Detailed email sending error:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode,
+        stack: error.stack,
+        // Check if auth information exists
+        authInfo: error.auth ? 'Auth info exists' : 'No auth info'
+      });
+
+      // Try a more direct SMTP configuration if the service approach fails
+      if (error.code === 'EAUTH') {
+        console.log('Trying alternative SMTP configuration...');
+        try {
+          const alternativeTransporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASSWORD,
+            },
+          });
+          
+          console.log('Sending email with alternative transporter...');
+          await alternativeTransporter.sendMail(mailOptions);
+          console.log('Email sent successfully with alternative configuration!');
+          return NextResponse.json(
+            { message: 'Message sent successfully' },
+            { status: 200 }
+          );
+        } catch (altError: any) {
+          console.error('Alternative email configuration also failed:', {
+            message: altError.message,
+            code: altError.code,
+            command: altError.command,
+            response: altError.response
+          });
+        }
+      }
+      
       return NextResponse.json(
         { error: 'Failed to send email. Please try again later.' },
         { status: 500 }

@@ -22,6 +22,7 @@ export default function Contact() {
   const [submissionError, setSubmissionError] = useState("");
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [scriptError, setScriptError] = useState("");
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   useEffect(() => {
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
@@ -133,7 +134,7 @@ export default function Contact() {
         throw new Error(data.error || "Failed to submit the form.");
       }
 
-      alert("Thank you for your message. I'll get back to you soon!");
+      setFormSubmitted(true);
       setFormData({
         name: "",
         email: "",
@@ -162,11 +163,25 @@ export default function Contact() {
   };
 
   return (
-    <section className="py-16 px-4 md:px-8">
+    <section id="contact" className="py-16 px-4 md:px-8">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Contact Me</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Let's Talk</h2>
         <div className="bg-[rgb(20,21,52)] p-6 rounded-lg shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <p className="animate-fade-in animation-delay-600">If you're scaling, but your systems aren't keeping up, let's have a conversation.</p>
+        <br/>
+          {formSubmitted ? (
+            <div className="py-12 text-center">
+              <h3 className="text-xl font-bold mb-4 text-accent-gold">Thank you for your message!</h3>
+              <p className="mb-6">I'll get back to you soon.</p>
+              <button
+                onClick={() => setFormSubmitted(false)}
+                className="px-6 py-2 text-white bg-accent-blue rounded-md font-semibold hover:bg-accent-gold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-accent-gold"
+              >
+                Send another message
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block mb-2 text-sm font-medium text-white">
                 Name
@@ -226,6 +241,7 @@ export default function Contact() {
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </form>
+          )}
         </div>
       </div>
     </section>
